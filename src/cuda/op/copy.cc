@@ -2048,6 +2048,13 @@ Stmt Copy::LowerBulk(const CopyNode &op, const LowerArgs &lower_args,
           TMATransactionBytesFromElements(total_elements, shared_tensor->dtype);
     }
 
+    ICHECK(analyzer->CanProve(
+        FloorMod(total_bytes, make_const(total_bytes.dtype(), 16)) ==
+        make_const(total_bytes.dtype(), 0)))
+        << "BulkCopy1D requires total_bytes to be 16-byte aligned, but got "
+           "invalid size.\n"
+        << "  Total_bytes = " << total_bytes << "\n";
+
     Stmt barrier_before_tma_stmt;
     Optional<Stmt> barrier_after_tma_stmt = std::nullopt;
     if (GetIsTmaCopy(op)) {

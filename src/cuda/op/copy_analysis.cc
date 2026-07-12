@@ -300,13 +300,22 @@ bool CheckBulkCopy1D(const Buffer &global_tensor, const Buffer &shared_tensor,
   for (size_t i = 0; i < shared_range.size(); i++) {
     shared_elements *= shared_range[i]->extent;
   }
+
   PrimExpr global_elements = 1;
   for (size_t i = 0; i < global_range.size(); i++) {
     global_elements *= global_range[i]->extent;
   }
+
   bool element_match =
       analyzer->CanProveEqual(shared_elements, global_elements);
-  return shared_is_contiguous && global_is_contiguous && element_match;
+
+  PrimExpr total_bits = shared_elements * shared_tensor->dtype.bits();
+
+  bool total_16b_aligned =
+      analyzer->CanProveEqual(FloorMod(total_bits, 128), 0);
+
+  return shared_is_contiguous && global_is_contiguous && element_match &&
+         total_16b_aligned;
 }
 
 bool CheckBulkLoad1D(const CopyNode &op, Target target,
